@@ -35,9 +35,11 @@ def get_movies(session_id: str, db: Session = Depends(get_db)):
                 "id": m.id,
                 "title": m.title,
                 "genre": m.genre,
+                "description": m.description,
                 "language": m.language,
-                "rating": m.rating
+                "rating": m.rating,
+                "poster_url": m.poster_url,
             }
-            for m in movies
+            for m in movies if m.poster_url
         ]
     }

@@ -22,21 +22,25 @@ def create_session(host_name: str, db: Session = Depends(get_db)):
     try:
         session_id = str(uuid4())
         
-        # Create session in database
+        # Create session in database (host will be set to host user id later)
         new_session = SessionModel(
             id=session_id,
-            host=host_name,
+            host="",
             status="waiting"
         )
         db.add(new_session)
         db.flush()
-        
+
         # Create host user in database
         host_user = UserModel(
             name=host_name,
             session_id=session_id
         )
         db.add(host_user)
+        db.flush()
+
+        # Set session host to host user's id for robust identification
+        new_session.host = host_user.id
         db.commit()
         print(f"✅ Session created: {session_id}")
 
@@ -93,13 +97,13 @@ def join_session(session_id: str, user_name: str, db: Session = Depends(get_db))
     }
 
 @router.post("/start")
-def start_session(session_id: str, host_name: str, db: Session = Depends(get_db)):
+def start_session(session_id: str, host_id: str, db: Session = Depends(get_db)):
     session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    if session.host != host_name:
+    if session.host != host_id:
         raise HTTPException(status_code=403, detail="Only host can start the session")
 
     if session.status == "active":
@@ -112,4 +116,40 @@ def start_session(session_id: str, host_name: str, db: Session = Depends(get_db)
         "session_id": session_id,
         "status": "active",
         "message": "Session started"
+    }
+
+@router.post("/end")
+def end_session(session_id: str, host_id: str, db: Session = Depends(get_db)):
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session.host != host_id:
+        raise HTTPException(status_code=403, detail="Only host can end the session")
+
+    if session.status == "ended":
+        raise HTTPException(status_code=400, detail="Session already ended")
+
+    session.status = "ended"
+    db.commit()
+
+    return {
+        "session_id": session_id,
+        "status": "ended",
+        "message": "Session ended"
+    }
+
+@router.get("/users")
+def list_users(session_id: str, db: Session = Depends(get_db)):
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    users = db.query(UserModel).filter(UserModel.session_id == session_id).all()
+    return {
+        "session_id": session_id,
+        "host_id": session.host,
+        "count": len(users),
+        "users": [{"id": u.id, "name": u.name} for u in users]
     }

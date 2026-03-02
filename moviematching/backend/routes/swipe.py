@@ -18,10 +18,11 @@ def get_db():
         db.close()
 
 @router.post("/")
+@router.post("")
 def swipe_movie(
     session_id: str,
     user_id: str,
-    movie_id: int,
+    movie_id: str,
     action: str,
     db: Session = Depends(get_db)
 ):

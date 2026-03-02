@@ -6,7 +6,7 @@ class Movie(Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
-    genre = Column(String)              # ✅ ADD THIS
+    genre = Column(String)
     description = Column(String)
     language = Column(String)
     rating = Column(Float)

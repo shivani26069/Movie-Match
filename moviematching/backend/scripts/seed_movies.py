@@ -7,14 +7,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.database import SessionLocal
 from models.movie import Movie
+from core.config import TMDB_API_KEY
 
-API_KEY = "90e8e6dba6b4c628c26b190be4dc605d"
 BASE_URL = "https://api.themoviedb.org/3"
 
 LANGUAGES = ["en", "hi", "te", "ta", "ml"]
 IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
 def seed_movies():
+    if not TMDB_API_KEY:
+        print("TMDB_API_KEY not set. Please set it in your environment or .env file.")
+        return
+
     db = SessionLocal()
 
     for lang in LANGUAGES:
@@ -24,7 +28,7 @@ def seed_movies():
         for page in range(1, 3):  # Pages 1 and 2
             url = f"{BASE_URL}/discover/movie"
             params = {
-                "api_key": API_KEY,
+                "api_key": TMDB_API_KEY,
                 "with_original_language": lang,
                 "sort_by": "release_date.desc",
                 "page": page
